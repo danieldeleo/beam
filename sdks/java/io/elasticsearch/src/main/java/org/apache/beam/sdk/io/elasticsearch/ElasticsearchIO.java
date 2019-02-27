@@ -51,6 +51,7 @@ import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.io.BoundedSource;
 import org.apache.beam.sdk.options.PipelineOptions;
+import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
@@ -220,51 +221,51 @@ public class ElasticsearchIO {
   @AutoValue
   public abstract static class ConnectionConfiguration implements Serializable {
 
-    public abstract List<String> getAddresses();
+    public abstract ValueProvider<List<String>> getAddresses();
 
     @Nullable
-    public abstract String getUsername();
+    public abstract ValueProvider<String> getUsername();
 
     @Nullable
-    public abstract String getPassword();
+    public abstract ValueProvider<String> getPassword();
 
     @Nullable
-    public abstract String getKeystorePath();
+    public abstract ValueProvider<String> getKeystorePath();
 
     @Nullable
-    public abstract String getKeystorePassword();
+    public abstract ValueProvider<String> getKeystorePassword();
 
-    public abstract String getIndex();
+    public abstract ValueProvider<String> getIndex();
 
-    public abstract String getType();
-
-    @Nullable
-    public abstract Integer getSocketAndRetryTimeout();
+    public abstract ValueProvider<String> getType();
 
     @Nullable
-    public abstract Integer getConnectTimeout();
+    public abstract ValueProvider<Integer> getSocketAndRetryTimeout();
+
+    @Nullable
+    public abstract ValueProvider<Integer> getConnectTimeout();
 
     abstract Builder builder();
 
     @AutoValue.Builder
     abstract static class Builder {
-      abstract Builder setAddresses(List<String> addresses);
+      abstract Builder setAddresses(ValueProvider<List<String>> addresses);
 
-      abstract Builder setUsername(String username);
+      abstract Builder setUsername(ValueProvider<String> username);
 
-      abstract Builder setPassword(String password);
+      abstract Builder setPassword(ValueProvider<String> password);
 
-      abstract Builder setKeystorePath(String keystorePath);
+      abstract Builder setKeystorePath(ValueProvider<String> keystorePath);
 
-      abstract Builder setKeystorePassword(String password);
+      abstract Builder setKeystorePassword(ValueProvider<String> password);
 
-      abstract Builder setIndex(String index);
+      abstract Builder setIndex(ValueProvider<String> index);
 
-      abstract Builder setType(String type);
+      abstract Builder setType(ValueProvider<String> type);
 
-      abstract Builder setSocketAndRetryTimeout(Integer maxRetryTimeout);
+      abstract Builder setSocketAndRetryTimeout(ValueProvider<Integer> maxRetryTimeout);
 
-      abstract Builder setConnectTimeout(Integer connectTimeout);
+      abstract Builder setConnectTimeout(ValueProvider<Integer> connectTimeout);
 
       abstract ConnectionConfiguration build();
     }
@@ -282,8 +283,22 @@ public class ElasticsearchIO {
       checkArgument(addresses.length > 0, "addresses can not be empty");
       checkArgument(index != null, "index can not be null");
       checkArgument(type != null, "type can not be null");
+      return create(
+          ValueProvider.StaticValueProvider.of(Arrays.asList(addresses)),
+          ValueProvider.StaticValueProvider.of(type),
+          ValueProvider.StaticValueProvider.of(index));
+    }
+
+    public static ConnectionConfiguration create(
+        ValueProvider<List<String>> addresses,
+        ValueProvider<String> index,
+        ValueProvider<String> type) {
+      checkArgument(addresses != null, "addresses can not be null");
+      checkArgument(addresses.get().size() > 0, "addresses can not be empty");
+      checkArgument(index != null, "index can not be null");
+      checkArgument(type != null, "type can not be null");
       return new AutoValue_ElasticsearchIO_ConnectionConfiguration.Builder()
-          .setAddresses(Arrays.asList(addresses))
+          .setAddresses(addresses)
           .setIndex(index)
           .setType(type)
           .build();
@@ -299,6 +314,12 @@ public class ElasticsearchIO {
     public ConnectionConfiguration withUsername(String username) {
       checkArgument(username != null, "username can not be null");
       checkArgument(!username.isEmpty(), "username can not be empty");
+      return withUsername(ValueProvider.StaticValueProvider.of(username));
+    }
+
+    public ConnectionConfiguration withUsername(ValueProvider<String> username) {
+      checkArgument(username != null, "username can not be null");
+      checkArgument(!username.get().isEmpty(), "username can not be empty");
       return builder().setUsername(username).build();
     }
 
@@ -312,6 +333,12 @@ public class ElasticsearchIO {
     public ConnectionConfiguration withPassword(String password) {
       checkArgument(password != null, "password can not be null");
       checkArgument(!password.isEmpty(), "password can not be empty");
+      return withPassword(ValueProvider.StaticValueProvider.of(password));
+    }
+
+    public ConnectionConfiguration withPassword(ValueProvider<String> password) {
+      checkArgument(password != null, "password can not be null");
+      checkArgument(!password.get().isEmpty(), "password can not be empty");
       return builder().setPassword(password).build();
     }
 
@@ -326,6 +353,12 @@ public class ElasticsearchIO {
     public ConnectionConfiguration withKeystorePath(String keystorePath) {
       checkArgument(keystorePath != null, "keystorePath can not be null");
       checkArgument(!keystorePath.isEmpty(), "keystorePath can not be empty");
+      return withKeystorePath(ValueProvider.StaticValueProvider.of(keystorePath));
+    }
+
+    public ConnectionConfiguration withKeystorePath(ValueProvider<String> keystorePath) {
+      checkArgument(keystorePath != null, "keystorePath can not be null");
+      checkArgument(!keystorePath.get().isEmpty(), "keystorePath can not be empty");
       return builder().setKeystorePath(keystorePath).build();
     }
 
@@ -338,6 +371,11 @@ public class ElasticsearchIO {
      *     Elasticsearch.
      */
     public ConnectionConfiguration withKeystorePassword(String keystorePassword) {
+      checkArgument(keystorePassword != null, "keystorePassword can not be null");
+      return withKeystorePassword(ValueProvider.StaticValueProvider.of(keystorePassword));
+    }
+
+    public ConnectionConfiguration withKeystorePassword(ValueProvider<String> keystorePassword) {
       checkArgument(keystorePassword != null, "keystorePassword can not be null");
       return builder().setKeystorePassword(keystorePassword).build();
     }
@@ -353,6 +391,12 @@ public class ElasticsearchIO {
      */
     public ConnectionConfiguration withSocketAndRetryTimeout(Integer socketAndRetryTimeout) {
       checkArgument(socketAndRetryTimeout != null, "socketAndRetryTimeout can not be null");
+      return withSocketAndRetryTimeout(ValueProvider.StaticValueProvider.of(socketAndRetryTimeout));
+    }
+
+    public ConnectionConfiguration withSocketAndRetryTimeout(
+        ValueProvider<Integer> socketAndRetryTimeout) {
+      checkArgument(socketAndRetryTimeout != null, "socketAndRetryTimeout can not be null");
       return builder().setSocketAndRetryTimeout(socketAndRetryTimeout).build();
     }
 
@@ -365,6 +409,11 @@ public class ElasticsearchIO {
      *     Elasticsearch.
      */
     public ConnectionConfiguration withConnectTimeout(Integer connectTimeout) {
+      checkArgument(connectTimeout != null, "connectTimeout can not be null");
+      return withConnectTimeout(ValueProvider.StaticValueProvider.of(connectTimeout));
+    }
+
+    public ConnectionConfiguration withConnectTimeout(ValueProvider<Integer> connectTimeout) {
       checkArgument(connectTimeout != null, "connectTimeout can not be null");
       return builder().setConnectTimeout(connectTimeout).build();
     }
@@ -381,9 +430,9 @@ public class ElasticsearchIO {
 
     @VisibleForTesting
     RestClient createClient() throws IOException {
-      HttpHost[] hosts = new HttpHost[getAddresses().size()];
+      HttpHost[] hosts = new HttpHost[getAddresses().get().size()];
       int i = 0;
-      for (String address : getAddresses()) {
+      for (String address : getAddresses().get()) {
         URL url = new URL(address);
         hosts[i] = new HttpHost(url.getHost(), url.getPort(), url.getProtocol());
         i++;
@@ -392,16 +441,17 @@ public class ElasticsearchIO {
       if (getUsername() != null) {
         final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(
-            AuthScope.ANY, new UsernamePasswordCredentials(getUsername(), getPassword()));
+            AuthScope.ANY,
+            new UsernamePasswordCredentials(getUsername().get(), getPassword().get()));
         restClientBuilder.setHttpClientConfigCallback(
             httpAsyncClientBuilder ->
                 httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
       }
-      if (getKeystorePath() != null && !getKeystorePath().isEmpty()) {
+      if (getKeystorePath() != null && !getKeystorePath().get().isEmpty()) {
         try {
           KeyStore keyStore = KeyStore.getInstance("jks");
-          try (InputStream is = new FileInputStream(new File(getKeystorePath()))) {
-            String keystorePassword = getKeystorePassword();
+          try (InputStream is = new FileInputStream(new File(getKeystorePath().get()))) {
+            String keystorePassword = getKeystorePassword().get();
             keyStore.load(is, (keystorePassword == null) ? null : keystorePassword.toCharArray());
           }
           final SSLContext sslContext =
@@ -422,16 +472,16 @@ public class ElasticsearchIO {
             public RequestConfig.Builder customizeRequestConfig(
                 RequestConfig.Builder requestConfigBuilder) {
               if (getConnectTimeout() != null) {
-                requestConfigBuilder.setConnectTimeout(getConnectTimeout());
+                requestConfigBuilder.setConnectTimeout(getConnectTimeout().get());
               }
               if (getSocketAndRetryTimeout() != null) {
-                requestConfigBuilder.setSocketTimeout(getSocketAndRetryTimeout());
+                requestConfigBuilder.setSocketTimeout(getSocketAndRetryTimeout().get());
               }
               return requestConfigBuilder;
             }
           });
       if (getSocketAndRetryTimeout() != null) {
-        restClientBuilder.setMaxRetryTimeoutMillis(getSocketAndRetryTimeout());
+        restClientBuilder.setMaxRetryTimeoutMillis(getSocketAndRetryTimeout().get());
       }
 
       return restClientBuilder.build();
@@ -615,7 +665,7 @@ public class ElasticsearchIO {
 
         JsonNode statsJson = BoundedElasticsearchSource.getStats(connectionConfiguration, true);
         JsonNode shardsJson =
-            statsJson.path("indices").path(connectionConfiguration.getIndex()).path("shards");
+            statsJson.path("indices").path(connectionConfiguration.getIndex().get()).path("shards");
 
         Iterator<Map.Entry<String, JsonNode>> shards = shardsJson.fields();
         while (shards.hasNext()) {
@@ -662,7 +712,10 @@ public class ElasticsearchIO {
       // #sliced-scroll)
       JsonNode statsJson = getStats(connectionConfiguration, false);
       JsonNode indexStats =
-          statsJson.path("indices").path(connectionConfiguration.getIndex()).path("primaries");
+          statsJson
+              .path("indices")
+              .path(connectionConfiguration.getIndex().get())
+              .path("primaries");
       JsonNode store = indexStats.path("store");
       return store.path("size_in_bytes").asLong();
     }
